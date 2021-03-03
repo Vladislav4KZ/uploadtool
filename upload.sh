@@ -137,7 +137,7 @@ if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ] ; then
 #  fi
 #  body="$body\n$(cat ./uploaded-to)\nThe link(s) will expire 14 days from now."
 #  review_comment=$(curl -X POST \
-#    --header "Authorization: token ${GITHUB_TOKEN}" \
+#    --header "Authorization: token ${GH_TOKEN}" \
 #    --data '{"commit_id": "'"$TRAVIS_COMMIT"'","body": "'"$body"'","event": "COMMENT"}' \
 #    $review_url)
 #  if echo $review_comment | grep -q "Bad credentials" 2>/dev/null ; then
@@ -152,8 +152,8 @@ if [ ! -z "$TRAVIS_REPO_SLUG" ] ; then
   echo "Running on Travis CI"
   echo "TRAVIS_COMMIT: $TRAVIS_COMMIT"
   REPO_SLUG="$TRAVIS_REPO_SLUG"
-  if [ -z "$GITHUB_TOKEN" ] ; then
-    echo "\$GITHUB_TOKEN missing, please set it in the Travis CI settings of this project"
+  if [ -z "$GH_TOKEN" ] ; then
+    echo "\$GH_TOKEN missing, please set it in the Travis CI settings of this project"
     echo "You can get one from https://github.com/settings/tokens"
     exit 1
   fi
@@ -163,13 +163,13 @@ else
   if [ -z "$REPO_SLUG" ] ; then
     read -r -p "Repo Slug (GitHub and Travis CI username/reponame): " REPO_SLUG
   fi
-  if [ -z "$GITHUB_TOKEN" ] ; then
-    read -r -s -p "Token (https://github.com/settings/tokens): " GITHUB_TOKEN
+  if [ -z "$GH_TOKEN" ] ; then
+    read -r -s -p "Token (https://github.com/settings/tokens): " GH_TOKEN
   fi
 fi
 
 tag_url="https://api.github.com/repos/$REPO_SLUG/git/refs/tags/$RELEASE_NAME"
-tag_infos=$(curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" "${tag_url}")
+tag_infos=$(curl -XGET --header "Authorization: token ${GH_TOKEN}" "${tag_url}")
 echo "tag_infos: $tag_infos"
 tag_sha=$(echo "$tag_infos" | grep '"sha":' | head -n 1 | cut -d '"' -f 4 | cut -d '{' -f 1)
 echo "tag_sha: $tag_sha"
@@ -177,7 +177,7 @@ echo "tag_sha: $tag_sha"
 release_url="https://api.github.com/repos/$REPO_SLUG/releases/tags/$RELEASE_NAME"
 echo "Getting the release ID..."
 echo "release_url: $release_url"
-release_infos=$(curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" "${release_url}")
+release_infos=$(curl -XGET --header "Authorization: token ${GH_TOKEN}" "${release_url}")
 echo "release_infos: $release_infos"
 release_id=$(echo "$release_infos" | grep "\"id\":" | head -n 1 | tr -s " " | cut -f 3 -d" " | cut -f 1 -d ",")
 echo "release ID: $release_id"
@@ -197,13 +197,13 @@ if [ "$TRAVIS_COMMIT" != "$target_commit_sha" ] ; then
     echo "Delete the release..."
     echo "delete_url: $delete_url"
     curl -XDELETE \
-        --header "Authorization: token ${GITHUB_TOKEN}" \
+        --header "Authorization: token ${GH_TOKEN}" \
         "${delete_url}"
   fi
 
   # echo "Checking if release with the same name is still there..."
   # echo "release_url: $release_url"
-  # curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" \
+  # curl -XGET --header "Authorization: token ${GH_TOKEN}" \
   #     "$release_url"
 
   if [ "$RELEASE_NAME" == "continuous" ] ; then
@@ -213,7 +213,7 @@ if [ "$TRAVIS_COMMIT" != "$target_commit_sha" ] ; then
     delete_url="https://api.github.com/repos/$REPO_SLUG/git/refs/tags/$RELEASE_NAME"
     echo "delete_url: $delete_url"
     curl -XDELETE \
-        --header "Authorization: token ${GITHUB_TOKEN}" \
+        --header "Authorization: token ${GH_TOKEN}" \
         "${delete_url}"
   fi
 
@@ -233,7 +233,7 @@ if [ "$TRAVIS_COMMIT" != "$target_commit_sha" ] ; then
     BODY="$UPLOADTOOL_BODY"
   fi
 
-  release_infos=$(curl -H "Authorization: token ${GITHUB_TOKEN}" \
+  release_infos=$(curl -H "Authorization: token ${GH_TOKEN}" \
        --data '{"tag_name": "'"$RELEASE_NAME"'","target_commitish": "'"$TRAVIS_COMMIT"'","name": "'"$RELEASE_TITLE"'","body": "'"$BODY"'","draft": false,"prerelease": '$is_prerelease'}' "https://api.github.com/repos/$REPO_SLUG/releases")
 
   echo "$release_infos"
@@ -274,7 +274,7 @@ urlencode() {
 for FILE in "$@" ; do
   FULLNAME="${FILE}"
   BASENAME="$(basename "${FILE}")"
-  curl -H "Authorization: token ${GITHUB_TOKEN}" \
+  curl -H "Authorization: token ${GH_TOKEN}" \
        -H "Accept: application/vnd.github.manifold-preview" \
        -H "Content-Type: application/octet-stream" \
        --data-binary "@$FULLNAME" \
@@ -287,7 +287,7 @@ $shatool "$@"
 if [ "$TRAVIS_COMMIT" != "$tag_sha" ] ; then
   echo "Publish the release..."
 
-  release_infos=$(curl -H "Authorization: token ${GITHUB_TOKEN}" \
+  release_infos=$(curl -H "Authorization: token ${GH_TOKEN}" \
        --data '{"draft": false}' "$release_url")
 
   echo "$release_infos"
